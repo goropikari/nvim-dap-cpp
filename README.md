@@ -1,7 +1,9 @@
 # nvim-dap-cpp
 
+[nvim-dap][1] plugin for c, cpp.
+
 ## setup
-Download cpptools vsix from [marketplace][1].
+Download cpptools vsix from [marketplace][2].
 
 ```bash
 mv {downloaded/cpptools.vsix} ~/.local/share/nvim/cpptools-linux.vsix
@@ -12,17 +14,19 @@ chmod +x ./cpptools/extension/debugAdapters/bin/OpenDebugAD7
 
 ## Installation
 
-[`lazy.nvim`][2]
+[`lazy.nvim`][3]
 
 ```lua
 {
   'goropikari/nvim-dap-cpp',
   dependencies = { 'mfussenegger/nvim-dap' },
   opts = {
-    cpptools_path = vim.fn.stdpath 'data' .. '/cpptools/extension/debugAdapters/bin/OpenDebugAD7',
+    cpptools = {
+      path = vim.fn.stdpath('data') .. '/cpptools/extension/debugAdapters/bin/OpenDebugAD7',
+    },
     configurations = {},
   },
-  ft = { 'cpp' },
+  ft = { 'c', 'cpp' },
 }
 ```
 
@@ -36,5 +40,6 @@ devcontainer exec --workspace-folder=. bash
 nvim
 ```
 
-[1]: https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools
-[2]: https://github.com/folke/lazy.nvim
+[1]: https://github.com/mfussenegger/nvim-dap
+[2]: https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools
+[3]: https://github.com/folke/lazy.nvim

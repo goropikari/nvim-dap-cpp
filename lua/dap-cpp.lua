@@ -3,12 +3,17 @@ local M = {}
 local dap = require('dap')
 
 ---@class PluginConfiguration
+---@field cpptools table<string,string>
+---@field configurations table
 
 ---@type PluginConfiguration
+---@diagnostic disable-next-line
 local internal_global_config = {}
 
 local default_config = {
-  cpptools_path = vim.fn.stdpath('data') .. '/cpptools/extension/debugAdapters/bin/OpenDebugAD7',
+  cpptools = {
+    path = vim.fn.stdpath('data') .. '/cpptools/extension/debugAdapters/bin/OpenDebugAD7',
+  },
   configurations = {},
 }
 
@@ -29,7 +34,11 @@ local function get_arguments()
 end
 
 local function default_build()
-  return { 'g++', '-g', '-O0', vim.fn.expand('%'), '-o', vim.fn.expand('%:r') }
+  if vim.bo.filetype == 'cpp' then
+    return { 'g++', '-g', '-O0', vim.fn.expand('%'), '-o', vim.fn.expand('%:r') }
+  elseif vim.bo.filetype == 'c' then
+    return { 'gcc', '-g', '-O0', vim.fn.expand('%'), '-o', vim.fn.expand('%:r') }
+  end
 end
 
 local function setup_adapter(plugin_config)
@@ -49,7 +58,7 @@ local function setup_adapter(plugin_config)
   dap.adapters.cppdbg = { -- for vscode cpp debug
     id = 'cppdbg',
     type = 'executable',
-    command = plugin_config.cpptools_path,
+    command = plugin_config.cpptools.path,
     enrich_config = function(config, on_config)
       local final_config = vim.deepcopy(config)
       local build_command = config.build or default_build()
@@ -63,7 +72,7 @@ local function setup_dap_configurations(plugin_config)
   dap.configurations.cpp = dap.configurations.cpp or {}
   local common_configurations = {
     {
-      name = 'g++ - Build and debug active file',
+      name = 'Build and debug active file',
       type = 'cppdbg',
       request = 'launch',
       program = '${fileDirname}/${fileBasenameNoExtension}',
@@ -71,7 +80,7 @@ local function setup_dap_configurations(plugin_config)
       cwd = '${fileDirname}',
     },
     {
-      name = 'g++ - Build and debug active file with arguments',
+      name = 'Build and debug active file with arguments',
       type = 'cppdbg',
       request = 'launch',
       program = '${fileDirname}/${fileBasenameNoExtension}',
@@ -80,7 +89,7 @@ local function setup_dap_configurations(plugin_config)
       args = get_arguments,
     },
     {
-      name = 'g++ - Build and debug active file (gdb dap)',
+      name = 'Build and debug active file (gdb dap)',
       type = 'gdbdbg',
       request = 'launch',
       program = '${fileDirname}/${fileBasenameNoExtension}',
@@ -90,6 +99,9 @@ local function setup_dap_configurations(plugin_config)
 
   vim.list_extend(dap.configurations.cpp, common_configurations)
   vim.list_extend(dap.configurations.cpp, plugin_config.configurations)
+
+  dap.configurations.c = dap.configurations.c or {}
+  vim.list_extend(dap.configurations.c, dap.configurations.cpp)
 end
 
 function M.setup(opts)
