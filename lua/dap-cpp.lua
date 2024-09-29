@@ -13,6 +13,20 @@ local internal_global_config = {}
 local default_config = {
   cpptools = {
     path = vim.fn.stdpath('data') .. '/cpptools/extension/debugAdapters/bin/OpenDebugAD7',
+    version = 'latest',
+    platform = 'linux-x64',
+    -- {
+    --   "win32-x64": "Windows x64",
+    --   "win32-arm64": "Windows ARM",
+    --   "linux-x64": "Linux x64",
+    --   "linux-arm64": "Linux ARM64",
+    --   "linux-armhf": "Linux ARM32",
+    --   "darwin-x64": "macOS Intel",
+    --   "darwin-arm64": "macOS Apple Silicon",
+    --   "alpine-x64": "Alpine Linux 64 bit",
+    --   "alpine-arm64": "Alpine Linux ARM64",
+    --   "win32-ia32": "Windows ia32"
+    -- }
   },
   configurations = {},
 }
@@ -112,6 +126,48 @@ end
 
 function M.get_config()
   return internal_global_config
+end
+
+local plenary_ok, async = pcall(require, 'plenary.async')
+if plenary_ok then
+  local async_system = async.wrap(vim.system, 3)
+
+  local function get_cpptools_versions()
+    local obj = async_system({ 'curl', '-L', 'https://api.github.com/repos/microsoft/vscode-cpptools/releases' })
+    local versions = {}
+    for _, v in ipairs(vim.json.decode(obj.stdout)) do
+      _, _, v = string.find(v.tag_name, '(%d+.%d+.%d+)')
+      table.insert(versions, v)
+    end
+    return versions
+  end
+
+  local function _install_cpptools(version)
+    local publisher = 'ms-vscode'
+    local platform = internal_global_config.cpptools.platform
+    local url = string.format(
+      'http://%s.gallery.vsassets.io/_apis/public/gallery/publisher/%s/extension/cpptools/%s/assetbyname/Microsoft.VisualStudio.Services.VSIXPackage?targetPlatform=%s',
+      publisher,
+      publisher,
+      version,
+      platform
+    )
+    async_system({ 'curl', '-L', url, '-o', vim.fn.stdpath('data') .. '/cpptools.vsix' })
+    async_system({ 'unzip', '-o', '-d', vim.fn.stdpath('data') .. '/cpptools', vim.fn.stdpath('data') .. '/cpptools.vsix' })
+    async_system({ 'chmod', '+x', vim.fn.stdpath('data') .. '/cpptools/extension/debugAdapters/bin/OpenDebugAD7' })
+  end
+
+  function M.install_cpptools(version)
+    local ver = version or internal_global_config.cpptools.version
+    vim.notify('installing cpptools ' .. internal_global_config.cpptools.version)
+    async.void(function()
+      if ver == 'latest' then
+        ver = get_cpptools_versions()[1]
+      end
+      _install_cpptools(ver)
+      vim.notify('installed cpptools')
+    end)()
+  end
 end
 
 return M

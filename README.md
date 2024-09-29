@@ -2,16 +2,6 @@
 
 [nvim-dap][1] plugin for c, cpp.
 
-## setup
-Download cpptools vsix from [marketplace][2].
-
-```bash
-mv {downloaded/cpptools.vsix} ~/.local/share/nvim/cpptools-linux.vsix
-cd ~/.local/share/nvim
-unzip cpptools-linux.vsix -d cpptools
-chmod +x ./cpptools/extension/debugAdapters/bin/OpenDebugAD7
-```
-
 ## Installation
 
 [`lazy.nvim`][3]
@@ -19,15 +9,27 @@ chmod +x ./cpptools/extension/debugAdapters/bin/OpenDebugAD7
 ```lua
 {
   'goropikari/nvim-dap-cpp',
-  dependencies = { 'mfussenegger/nvim-dap' },
+  dependencies = {
+    'mfussenegger/nvim-dap',
+    'nvim-lua/plenary.nvim',
+},
   opts = {
     cpptools = {
       path = vim.fn.stdpath('data') .. '/cpptools/extension/debugAdapters/bin/OpenDebugAD7',
+      -- for installation command
+      version = 'latest',
+      platform = 'linux-x64',
     },
     configurations = {},
   },
   ft = { 'c', 'cpp' },
 }
+```
+
+Install cpptools
+
+```lua
+lua require('dap-cpp').install_cpptools()
 ```
 
 ## Setup development environment for this plugin
